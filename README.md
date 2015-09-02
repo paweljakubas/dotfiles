@@ -1,4 +1,4 @@
 dotfiles
 ========
 
-vim, zshell, tmux, bash configs and my arch linux start-up instruction
+emacs, zsh, bash, i3 configs and my arch linux start-up instruction
