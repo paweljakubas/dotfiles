@@ -15,6 +15,10 @@
 
 ;;Highligth trailing white spaces
 (setq-default show-trailing-whitespace t)
+
+;;Tabs to Spaces
+(setq-default indent-tabs-mode nil)
+
 ;;If there are trailing spaces remove them before saving the file
 (add-hook 'before-save-hook 'whitespace-cleanup)
 (add-hook 'before-save-hook (lambda()  (delete-trailing-whitespace)))
@@ -36,13 +40,13 @@
 ;;Set package sources
 (require 'package)
 (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-			 ("marmalade" . "http://marmalade-repo.org/packages/")
-			 ("melpa" . "http://melpa.org/packages/")))
+                         ("marmalade" . "http://marmalade-repo.org/packages/")
+                         ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
 (unless (package-installed-p 'use-package)
   (progn
-	(package-refresh-contents)
-	(package-install 'use-package)))
+        (package-refresh-contents)
+        (package-install 'use-package)))
 (require 'use-package)
 (require 'diminish)
 (require 'bind-key)
@@ -71,155 +75,192 @@
 ;;       (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'badger))))
 
 (use-package color-theme-wombat
-	:ensure t
-	:config
-	   (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'wombat)))
-	   (setq frame-background-mode 'dark))
-
-;; (use-package jedi
-;;   :preface
-;;   (declare-function jedi:goto-definition jedi nil)
-;;   (declare-function jedi:related-names jedi nil)
-;;   (declare-function jedi:show-doc jedi nil)
-;;   :bind (("C-." . jedi:goto-definition)
-;;	 ("C-c r" . jedi:related-names)
-;;	 ("C-?" . jedi:show-doc)))
-
-;; (use-package python
-;;   :ensure pungi
-;;   :bind (("<f3>" . py-insert-debug)
-;;	 ("<f9>" . py-insert-debug))
-;;   :mode (("\\.py$" . python-mode)
-;;	 ("\\.cpy$" . python-mode)
-;;	 ("\\.vpy$" . python-mode))
-;;   :config
-;;   (declare-function py-insert-debug netsight nil)
-;;   (setq fill-column 79)
-;;   (setq-default flycheck-flake8rc "~/.config/flake8rc")
-;;   (setq python-check-command "flake8")
-;;   (setq tab-width 4)
-;;   (pungi:setup-jedi)
-;;   (sphinx-doc-mode t))
-
-;; (use-package sphinx-doc)
-
-;; (use-package company-jedi
-;;   :config
-;;   (defun my/python-mode-hook ()
-;;	(add-to-list 'company-backends 'company-jedi))
-;;   (add-hook 'python-mode-hook 'my/python-mode-hook))
-
-;; (use-package pyvenv)
+        :ensure t
+        :config
+           (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'wombat)))
+           (setq frame-background-mode 'dark))
 
 (use-package deferred
   :ensure t)
 
-(use-package graphviz-dot-mode
-  :ensure t)
 
 (use-package scala-mode2
-		 :ensure
-		 :defer t
-		 :init
-		 (progn
-		   (use-package ensime
-				:ensure)
-		   (use-package sbt-mode
-		     :ensure))
-		 :config
-		 (add-hook 'scala-mode-hook 'ensime-scala-mode-hook))
+                 :ensure t
+                 :defer t
+                 :init
+                 (progn
+                   (use-package ensime
+                                :ensure)
+                   (use-package sbt-mode
+                     :ensure))
+                 :config
+                 (add-hook 'scala-mode-hook 'ensime-scala-mode-hook))
 
-(use-package yasnippet
-		 :diminish yas-minor-mode
-		 :defer t
-		 :ensure t
-		 :mode ("/\\.emacs\\.d/snippets/yasnippet-snippets/" . snippet-mode)
-		 :init
-		 (progn
-		 (setq yas-verbosity 3))
-		 (yas-global-mode 1))
-
-;; GNU Global Tags
-(use-package ggtags
-  :demand t
+(use-package web-mode
+  :ensure t
+  :defer t
   :init
-  (define-globalized-minor-mode global-ggtags-mode ggtags-mode
-    (lambda ()
-       (when (derived-mode-p 'c-mode 'c++-mode 'java-mode)
-	 (ggtags-mode 1)))))
+  (add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
+ )
+
+(use-package flycheck
+  :ensure t
+  :init
+  (setq flycheck-highlighting-mode 'nil)
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+  :config
+;; disable jshint since we prefer eslint checking
+  (setq-default flycheck-disabled-checkers
+              (append flycheck-disabled-checkers
+                      '(javascript-jshint)))
+
+;; use eslint with web-mode for jsx files
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
+
+;; customize flycheck temp file prefix
+  (setq-default flycheck-temp-prefix ".flycheck")
+
+;; disable json-jsonlist checking for json files
+  (setq-default flycheck-disabled-checkers
+              (append flycheck-disabled-checkers
+                          '(json-jsonlist))))
 
 (use-package company
-  :defer 5
-  :config (progn
-	    (setq company-idle-delay 0.25)
-	    (add-hook 'c++-mode-hook
-		      #'(lambda ()
-			  (make-local-variable 'company-clang-arguments)
-			  (setq company-clang-arguments '("-std=c++1y"))))
-	    (setq company-backends '(company-bbdb
-				     company-nxml
-				     company-css
-				     company-eclim
-				     company-semantic
-				     ;; company-clang
-				     company-xcode
-				     company-cmake
-				     company-capf
-				     (company-gtags
-				      company-etags
-				      :with
-				      company-keywords
-				      company-dabbrev-code)
-				     company-clang ; moved down
-				     company-oddmuse
-				     company-files
-				     company-dabbrev))
-	    (add-hook 'eshell-mode-hook '(lambda ()
-					   (company-mode 0)))
-	    (add-hook 'org-mode-hook '(lambda ()
-					(company-mode 0)))
-	    (global-company-mode 1))
-  :init (use-package company-clang
-	  :bind ("C-c V" . company-clang))
-  :bind ("C-c v" . company-complete)
-  :demand t)
+  :ensure t
+  :diminish company-mode
+  :init
+  (setq company-dabbrev-ignore-case t
+        company-dabbrev-downcase nil)
+  (add-hook 'after-init-hook 'global-company-mode)
+  :config
+  (use-package company-tern
+    :ensure t
+    :init (add-to-list 'company-backends 'company-tern)))
 
-;; Auto-complete
-;; (use-package auto-complete
-;;   :ensure t
-;;   :disabled t
-;;   :config
-;;   ;; add to dictionary directories
-;;   ;;(add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
-;;   ;; default configuration for auto-complete
-;;   (require 'auto-complete-config)
-;;   (ac-config-default)
-;;   ;; include C headers
-;;   (defun my:ac-c-header-init ()
-;;	(require 'auto-complete-c-headers)
-;;	(add-to-list 'ac-sources 'ac-source-c-headers)
-;;	(add-to-list 'achead:include-directories '"/usr/include"))
-;;   ;; call this function from c/c++ hooks
-;;   (add-hook 'c++-mode-hook 'my:ac-c-header-init)
-;;   (add-hook 'c-mode-hook 'my:ac-c-header-init))
+(use-package yasnippet
+  :disabled t
+  :ensure t
+  :diminish yas-minor-mode
+  :config
+  (yas-global-mode 1))
 
-;; ;; (use-package c-c++-header)
-;; ;;   :mode ("\\.h\\'" . c-c++-header)
-;; ;;   :init (defalias 'h++-mode 'c++-mode))
+(use-package ag
+  :ensure t)
 
+(use-package json-mode
+  :ensure t
+  :init (setq js-indent-level 2))
 
+(use-package magit
+  :ensure t
+  :commands magit-get-top-dir
+  :bind (("C-c g" . magit-status)
+         ("C-c C-g l" . magit-file-log)
+         ("C-c f" . magit-grep)))
 
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   (quote
-    ("9b402e9e8f62024b2e7f516465b63a4927028a7055392290600b776e4a5b9905" "a444b2e10bedc64e4c7f312a737271f9a2f2542c67caa13b04d525196562bf38" default))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(use-package js2-mode
+  :ensure t
+  :mode "\\.js\\'"
+  :init
+  (setq js2-highlight-level 3
+        js2-basic-offset 2
+        js2-allow-rhino-new-expr-initializer nil
+        js2-global-externs '("describe" "before" "beforeEach" "after" "afterEach" "it")
+        js2-include-node-externs t)
+  (add-hook 'js2-mode-hook (lambda ()
+                             (subword-mode 1)
+                             (diminish 'subword-mode)))
+  (add-hook 'js2-mode-hook 'js2-imenu-extras-mode)
+  (rename-modeline "js2-mode" js2-mode "JS2")
+  :config
+  (use-package tern
+    :ensure t
+    :diminish tern-mode
+    :init
+    (add-hook 'js2-mode-hook 'tern-mode))
+  (use-package js-doc
+    :ensure t)
+  (use-package js2-refactor
+    :ensure t
+    :diminish js2-refactor-mode
+    :init
+    (add-hook 'js2-mode-hook #'js2-refactor-mode)
+    :config
+        (js2r-add-keybindings-with-prefix "C-c r")))
+
+(use-package web-mode
+  :ensure t
+  :mode (("\\.html?\\'" . web-mode)
+         ("\\.ejs\\'" . web-mode)
+         ("\\.jsx\\'" . web-mode))
+  :init
+  (setq web-mode-markup-indent-offset 2
+        web-mode-css-indent-offset 2
+        web-mode-code-indent-offset 2
+        web-mode-style-padding 2
+        web-mode-script-padding 2)
+
+  (defun my-setup-web-mode-html ()
+    (message "== setup web-mode for HTML ==")
+    (local-set-key (kbd "C-=") 'web-mode-mark-and-expand)
+    (flycheck-disable-checker 'javascript-eslint)
+    (flycheck-select-checker 'html-tidy))
+
+  (defun my-setup-web-mode-jsx ()
+    (message "== setup web-mode for JSX ==")
+    (local-set-key (kbd "C-=") 'er/expand-region)
+    ;; TODO: Somehow the html-tidy checker is still enabled when a jsx
+    ;; file is opened, but the errors disappear after the first
+    ;; change. Investigate further.
+    (flycheck-disable-checker 'html-tidy)
+    (flycheck-select-checker 'javascript-eslint)
+    (tern-mode 1)
+    (diminish 'tern-mode))
+
+  (defun my-setup-web-mode ()
+    (if (equal (file-name-extension buffer-file-name) "jsx")
+        (my-setup-web-mode-jsx)
+      (my-setup-web-mode-html)))
+
+  (defun my-web-mode-hook ()
+    (setq-local electric-pair-pairs (append electric-pair-pairs '((?' . ?'))))
+    (setq-local electric-pair-text-pairs electric-pair-pairs))
+
+  ;; (defadvice switch-to-buffer (after my-select-web-mode-config activate)
+  ;;   (when (equal major-mode 'web-mode)
+  ;;       (my-setup-web-mode)))
+
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
+  (flycheck-add-mode 'html-tidy 'web-mode)
+
+  (add-hook 'web-mode-hook 'my-web-mode-hook))
+
+(use-package jsx-mode
+  :ensure t
+  :init (setq jsx-indent-level 2))
+
+(use-package tss
+  :ensure t
+  :mode ("\\.ts\\'" . typescript-mode))
+
+(use-package css-mode
+  :init (setq css-indent-offset 2)
+  :config
+  (use-package rainbow-mode
+    :ensure t
+    :diminish rainbow-mode
+    :init
+    (add-hook 'css-mode-hook (lambda () (rainbow-mode t)))))
+
+(use-package less-css-mode
+  :ensure t)
+
+(use-package scss-mode
+  :ensure t
+  :mode (("\\.scss\\'" . scss-mode)
+                  ("\\.postcss\\'" . scss-mode)))
+
+(add-to-list 'load-path "/home/pawel/.emacs.d/ess/ESS/lisp/")
+(load "ess-site")
