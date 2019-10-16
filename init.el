@@ -18,6 +18,15 @@
 
 ;;Tabs to Spaces
 (setq-default indent-tabs-mode nil)
+;;(setq-default tab-width 4)
+;;(setq indent-line-function 'insert-tab)
+;;(customize-variable (quote tab-stop-list))
+;;(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ ;;'(tab-stop-list (quote (4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120))))
 
 ;;If there are trailing spaces remove them before saving the file
 (add-hook 'before-save-hook 'whitespace-cleanup)
@@ -37,11 +46,29 @@
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
 
+;;Set 80-wide vertical line
+;;(setq-default header-line-format
+;;      (list " " (make-string 79 ?~) "|"))
+(setq-default whitespace-line-column 80 whitespace-style '(face lines-tail))
+(global-whitespace-mode)
+
+(setq frame-title-format
+      (list (format "%s %%S: %%j " (system-name))
+            '(buffer-file-name "%f" (dired-directory dired-directory "%b"))))
+
+(defun show-file-name ()
+  "Show the full path file name in the minibuffer."
+  (interactive)
+  (message (buffer-file-name)))
+
+(global-set-key [C-f1] 'show-file-name)
+
 ;;Set package sources
 (require 'package)
 (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
                          ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")))
+                         ("melpa" . "http://melpa.org/packages/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/")))
 (package-initialize)
 (unless (package-installed-p 'use-package)
   (progn
@@ -49,6 +76,7 @@
         (package-install 'use-package)))
 (require 'use-package)
 (require 'bind-key)
+(setq package-check-signature nil)
 
 ;;Packages
 (use-package neotree
@@ -177,13 +205,21 @@
    '(haskell-stylish-on-save t)
    '(haskell-ask-also-kill-buffers nil)
    '(haskell-process-type (quote stack-ghci))
-   '(haskell-interactive-popup-errors nil))
+   '(haskell-interactive-popup-errors nil)
+   ;; Customization related to indentation.
+   '(haskell-indentation-layout-offset 4)
+   '(haskell-indentation-starter-offset 4)
+   '(haskell-indentation-left-offset 4)
+   '(haskell-indentation-where-pre-offset 4)
+   '(haskell-indentation-where-post-offset 4)
+   )
 
   (add-hook 'haskell-mode-hook 'haskell-indentation-mode)
   (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
   (add-hook 'haskell-mode-hook 'flycheck-mode)
   (add-hook 'before-save-hook 'haskell-mode-format-imports nil t)
   ; (add-hook 'haskell-mode-hook 'ghc-init)
+  (define-key haskell-mode-map (kbd "M-,") (function xref-pop-marker-stack))
 )
 
 (use-package elm-mode
@@ -193,36 +229,6 @@
   (add-to-list 'company-backends 'company-elm)
 )
 
-
-;;(use-package js2-mode
-;;  :ensure t
-;;  :mode "\\.js\\'"
-;;  :init
-;;  (setq js2-highlight-level 3
-;;        js2-basic-offset 2
-;;        js2-allow-rhino-new-expr-initializer nil
-;;        js2-global-externs '("describe" "before" "beforeEach" "after" "afterEach" "it")
-;;        js2-include-node-externs t)
-;;  (add-hook 'js2-mode-hook (lambda ()
-;;                             (subword-mode 1)
-;;                             (diminish 'subword-mode)))
-;;  (add-hook 'js2-mode-hook 'js2-imenu-extras-mode)
-;;  (rename-modeline "js2-mode" js2-mode "JS2")
-;;  :config
-;;  (use-package tern
-;;    :ensure t
-;;    :diminish tern-mode
-;;    :init
-;;    (add-hook 'js2-mode-hook 'tern-mode))
-;;  (use-package js-doc
-;;    :ensure t)
-;;  (use-package js2-refactor
-;;    :ensure t
-;;    :diminish js2-refactor-mode
-;;   :init
-;;    (add-hook 'js2-mode-hook #'js2-refactor-mode)
-;;    :config
-;;        (js2r-add-keybindings-with-prefix "C-c r")))
 
 (use-package web-mode
   :ensure t
@@ -300,7 +306,6 @@
   :mode (("\\.scss\\'" . scss-mode)
                   ("\\.postcss\\'" . scss-mode)))
 
-
 (add-to-list 'load-path "/home/pawel/.emacs.d/ess/ESS/lisp/")
 (load "ess-site")
 (setq ess-history-directory "~/R/")
@@ -314,14 +319,39 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(haskell-ask-also-kill-buffers nil)
+ '(haskell-indentation-layout-offset 4)
+ '(haskell-indentation-left-offset 4)
+ '(haskell-indentation-starter-offset 4)
+ '(haskell-indentation-where-post-offset 4)
+ '(haskell-indentation-where-pre-offset 4)
  '(haskell-interactive-popup-errors nil)
  '(haskell-process-type (quote stack-ghci))
+ '(haskell-stylish-on-save t)
  '(package-selected-packages
    (quote
-    (elm-mode zenburn-theme web-mode use-package tss scss-mode scala-mode2 rainbow-mode neotree magit less-css-mode julia-mode jsx-mode js2-refactor js-doc intero ghc ggtags flycheck-haskell epc ensime company-tern color-theme-wombat badger-theme ag))))
+    (wordnut markdown-mode elm-mode zenburn-theme web-mode use-package tss scss-mode scala-mode2 rainbow-mode neotree magit less-css-mode julia-mode jsx-mode js2-refactor js-doc intero ghc ggtags flycheck-haskell epc ensime company-tern color-theme-wombat badger-theme ag))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(use-package markdown-mode
+  :ensure t
+  :commands (markdown-mode gfm-mode)
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
+
+(use-package wordnut
+  :ensure t )
+
+(global-set-key [f12] 'wordnut-search)
+(global-set-key [C-f12] 'wordnut-lookup-current-word)
+
+(use-package editorconfig
+  :ensure t
+  :config
+  (editorconfig-mode 1))
