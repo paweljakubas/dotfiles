@@ -18,6 +18,15 @@
 
 ;;Tabs to Spaces
 (setq-default indent-tabs-mode nil)
+;;(setq-default tab-width 4)
+;;(setq indent-line-function 'insert-tab)
+;;(customize-variable (quote tab-stop-list))
+;;(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ ;;'(tab-stop-list (quote (4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120))))
 
 ;;If there are trailing spaces remove them before saving the file
 (add-hook 'before-save-hook 'whitespace-cleanup)
@@ -48,24 +57,23 @@
   "Show the full path file name in the minibuffer."
   (interactive)
   (message (buffer-file-name)))
-(global-set-key [C-f1] 'show-file-name)
 
+(global-set-key [C-f1] 'show-file-name)
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 
-;; package installation
+;;Set package sources
 (require 'package)
 (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")))
-
+                         ("melpa" . "http://melpa.org/packages/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/")))
 (package-initialize)
-
 (unless (package-installed-p 'use-package)
   (progn
         (package-refresh-contents)
         (package-install 'use-package)))
 (require 'use-package)
-
 (require 'bind-key)
+(setq package-check-signature nil)
 
 ;;Packages
 (use-package editorconfig
@@ -90,12 +98,11 @@
 (use-package deferred
   :ensure t)
 
-(use-package magit
-  :ensure t
-  :commands magit-get-top-dir
-  :bind (("C-c g" . magit-status)
-         ("C-c C-g l" . magit-file-log)
-         ("C-c f" . magit-grep)))
+(use-package vdiff
+  :load-path "/usr/bin/vdiff"
+  :commands (vdiff-buffers vdiff-files)
+  :config
+  (define-key vdiff-mode-map (kbd "C-c") vdiff-mode-prefix-map))
 
 (use-package company
     :ensure t
@@ -114,78 +121,64 @@
 ;shortcut for completion
 (global-set-key (kbd "C-c w") 'company-complete)
 
-;; Haskell stuff
-(setenv "PATH"
-        (concat (getenv "HOME") "/.local/bin:"
-                (getenv "HOME") "/.cabal/bin:"
-                (getenv "HOME") "/.ghcup/bin:"
-                "/usr/local/bin:"
-                (getenv "PATH")))
-
-(setq exec-path
-      (reverse
-       (append
-        (reverse exec-path)
-        (list (concat (getenv "HOME") "/.local/bin")
-              (concat (getenv "HOME") "/.cabal/bin")
-              (concat (getenv "HOME") "/.ghcup/bin")
-              "/usr/local/bin" ))))
-
-;;LSP Haskell
-;;
-;; (a) generate hie.yaml for project
-;; cd project
-;; stack install implicit-hie
-;; gen-hie > hie.yaml
 (use-package flycheck
+    :ensure t
+    :bind ([f9] . flycheck-list-errors)
+    :init
+      (setq flycheck-highlighting-mode 'nil)
+      (add-hook 'after-init-hook #'global-flycheck-mode)
+    :config
+      (setq-default flycheck-disabled-checkers '(emacs-lisp-checkdoc))
+      (setq-default flycheck-temp-prefix ".flycheck"))
+
+(use-package magit
   :ensure t
-  :init
-  (global-flycheck-mode t))
+  :commands magit-get-top-dir
+  :bind (("C-c g" . magit-status)
+         ("C-c C-g l" . magit-file-log)
+         ("C-c f" . magit-grep)))
 
-(use-package yasnippet
-  :ensure t)
+(use-package flycheck-haskell
+  :ensure t
+  :commands flycheck-haskell-setup)
 
-;; from https://blog.sumtypeofway.com/posts/emacs-config.html
 (use-package haskell-mode
-  :init
-  (add-hook 'before-save-hook #'lsp-format-buffer)
+  :ensure t
+  :mode "\\.hs\\'"
+  :commands haskell-mode
+  :bind ("C-c C-s" . fix-imports)
   :config
-  ;; haskell-mode doesn't know about newer GHC features.
-  (let ((new-extensions '("QuantifiedConstraints"
-                          "DerivingVia"
-                          "BlockArguments"
-                          "DerivingStrategies"
-                          "StandaloneKindSignatures"
-                          )))
-    (setq
-     haskell-ghc-supported-extensions
-     (append haskell-ghc-supported-extensions new-extensions)))
   (custom-set-variables
-   '(haskell-stylish-on-save t)))
+   '(haskell-stylish-on-save t)
+   '(haskell-ask-also-kill-buffers nil)
+   '(haskell-process-type (quote stack-ghci))
+   '(haskell-interactive-popup-errors nil)
+   ;; Customization related to indentation.
+   '(haskell-indentation-layout-offset 4)
+   '(haskell-indentation-starter-offset 4)
+   '(haskell-indentation-left-offset 4)
+   '(haskell-indentation-where-pre-offset 4)
+   '(haskell-indentation-where-post-offset 4)
+   )
 
-(use-package haskell-snippets
-  :after (haskell-mode yasnippet)
-  :defer)
-
-;;(setq lsp-headerline-breadcrumb-enable nil)
-
-(use-package lsp-mode
-  :ensure t
-  :init
-  (setq lsp-keymap-prefix "C-c l")
-  ;; we need to defer running lsp because in case there's a direnv
-  ;; with use nix, it takes some time to load and lsp won't find the
-  ;; language server until the env is setup properly
-  :hook ((haskell-mode . lsp-deferred))
-  :commands (lsp lsp-deferred))
-
-(use-package lsp-haskell
-  :ensure t
-  :custom
-    (lsp-haskell-stylish-haskell-on 't)
-    (lsp-haskell-formatting-provider "stylish-haskell"))
-
-(use-package lsp-ui
-  :ensure t
-  :commands lsp-ui-mode)
-
+  (add-hook 'haskell-mode-hook 'haskell-indentation-mode)
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  (add-hook 'haskell-mode-hook 'flycheck-mode)
+  (add-hook 'before-save-hook 'haskell-mode-format-imports nil t)
+  ; (add-hook 'haskell-mode-hook 'ghc-init)
+  (define-key haskell-mode-map (kbd "M-,") (function xref-pop-marker-stack))
+  )
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(package-selected-packages
+   (quote
+    (ghc yasnippet use-package neotree magit lsp-ui lsp-treemacs lsp-haskell flycheck-haskell editorconfig deferred company color-theme-modern))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
