@@ -1,0 +1,7 @@
+:set prompt "\ESC[1;35m\x03BB> \ESC[m"
+:set prompt-cont "\ESC[1;35m > \ESC[m"
+
+:seti -XScopedTypeVariables
+:seti -XTypeApplications
+:seti -XOverloadedStrings
+:seti -XDataKinds
