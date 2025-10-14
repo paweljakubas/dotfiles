@@ -1,32 +1,18 @@
-(setq user-full-name "Pawel Jakubas")
-(setq user-mail-address "jakubas.pawel@gmail.com")
-
 ;;Abbrieviate y or n instead of yes or no
 (fset 'yes-or-no-p 'y-or-n-p)
 
 ;;Show accompanying bracket
 (show-paren-mode t)
 
-;;Show line numbers
-(global-linum-mode 1)
 ;;Separate line number and the beginning of the line
-(setq linum-format "%d ")
-(global-set-key [f4] 'goto-line)
+(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(global-set-key [f5] 'goto-line)
 
 ;;Highligth trailing white spaces
 (setq-default show-trailing-whitespace t)
 
 ;;Tabs to Spaces
 (setq-default indent-tabs-mode nil)
-;;(setq-default tab-width 4)
-;;(setq indent-line-function 'insert-tab)
-;;(customize-variable (quote tab-stop-list))
-;;(custom-set-variables
-  ;; custom-set-variables was added by Custom.
-  ;; If you edit it by hand, you could mess it up, so be careful.
-  ;; Your init file should contain only one such instance.
-  ;; If there is more than one, they won't work right.
- ;;'(tab-stop-list (quote (4 8 12 16 20 24 28 32 36 40 44 48 52 56 60 64 68 72 76 80 84 88 92 96 100 104 108 112 116 120))))
 
 ;;If there are trailing spaces remove them before saving the file
 (add-hook 'before-save-hook 'whitespace-cleanup)
@@ -41,14 +27,10 @@
 (set-language-environment 'utf-8)
 (set-terminal-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8)
-(set-terminal-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-selection-coding-system 'utf-8)
 (prefer-coding-system 'utf-8)
 
-;;Set 80-wide vertical line
-;;(setq-default header-line-format
-;;      (list " " (make-string 79 ?~) "|"))
 (setq-default whitespace-line-column 80 whitespace-style '(face lines-tail))
 (global-whitespace-mode)
 
@@ -62,296 +44,140 @@
   (message (buffer-file-name)))
 
 (global-set-key [C-f1] 'show-file-name)
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 
-;;Set package sources
-(require 'package)
-(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")
-                         ("melpa-stable" . "https://stable.melpa.org/packages/")))
-(package-initialize)
-(unless (package-installed-p 'use-package)
-  (progn
-        (package-refresh-contents)
-        (package-install 'use-package)))
-(require 'use-package)
-(require 'bind-key)
-(setq package-check-signature nil)
+(load-theme 'wombat t)
 
-;;Packages
-(use-package neotree
-    :ensure t
-    :bind ([f2] . neotree-toggle)
-    :config
-      (define-key neotree-mode-map (kbd "i") #'neotree-enter-horizontal-split)
-      (define-key neotree-mode-map (kbd "l") #'neotree-enter-vertical-split))
+;; straight
+;; Used for package downloading and compilation
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name
+        "straight/repos/straight.el/bootstrap.el"
+        (or (bound-and-true-p straight-base-dir)
+            user-emacs-directory)))
+      (bootstrap-version 7))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
-;;My preffered color themes
-;; (use-package zenburn-theme
-;;     :ensure t
-;;     :config
-;;        (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'zenburn)))
-;;        (setq frame-background-mode 'dark))
+(setq package-enable-at-startup nil)
 
-;;(use-package badger-theme
-;;    :ensure t
-;;    :config
-;;       (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'badger))))
+;; treesitter
+(setq treesit-language-source-alist
+    '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+     (c "https://github.com/tree-sitter/tree-sitter-c")
+     (css "https://github.com/tree-sitter/tree-sitter-css")
+     (elisp "https://github.com/Wilfred/tree-sitter-elisp")
+     (html "https://github.com/tree-sitter/tree-sitter-html")
+     (json "https://github.com/tree-sitter/tree-sitter-json")
+     (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
+     (make "https://github.com/alemuller/tree-sitter-make")
+     (markdown "https://github.com/ikatyang/tree-sitter-markdown")
+     (python "https://github.com/tree-sitter/tree-sitter-python")
+     (rust "https://github.com/tree-sitter/tree-sitter-rust")
+     (toml "https://github.com/tree-sitter/tree-sitter-toml")
+     (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+     (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
-(use-package color-theme-wombat
-        :ensure t
-        :config
-           (add-hook 'after-init-hook '(lambda () (interactive) (load-theme 'wombat)))
-           (setq frame-background-mode 'dark))
+(use-package treesit
+  :when (and (fboundp 'treesit-available-p) (treesit-available-p))
+  :custom
+  (major-mode-remap-alist
+   '((c-mode . c-ts-mode)
+     (c++-mode . c++-ts-mode)
+     (cmake-mode . cmake-ts-mode)
+     (conf-toml-mode . toml-ts-mode)
+     (css-mode . css-ts-mode)
+     (js-mode . js-ts-mode)
+     (js-json-mode . json-ts-mode)
+     (json-mode . json-ts-mode)
+     (python-mode . python-ts-mode)
+     (sh-mode . bash-ts-mode)
+     (typescript-mode . typescript-ts-mode))))
 
-(use-package deferred
+(use-package treesit-auto
+  :straight t
+  :ensure t
+  :functions (treesit-auto-add-to-auto-mode-alist global-treesit-auto-mode)
+  :custom
+  (treesit-auto-install 'prompt)
+  :config
+  (treesit-auto-add-to-auto-mode-alist 'all)
+  (global-treesit-auto-mode))
+
+(use-package tree-sitter-indent
+  :straight t
   :ensure t)
 
-
-(use-package scala-mode2
-                 :ensure t
-                 :defer t
-                 :init
-                 (progn
-                   (use-package ensime
-                                :ensure)
-                   (use-package sbt-mode
-                     :ensure))
-                 :config
-                 (add-hook 'scala-mode-hook 'ensime-scala-mode-hook))
-
-(use-package web-mode
-  :ensure t
-  :defer t
-  :init
-  (add-to-list 'auto-mode-alist '("\\.jsx$" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.js\\'" . web-mode))
-  (add-to-list 'auto-mode-alist '("\\.html\\'" . web-mode))
- )
-
-(use-package flycheck
-  :ensure t
-  :init
-  (setq flycheck-highlighting-mode 'nil)
-  (add-hook 'after-init-hook #'global-flycheck-mode)
-  :config
-;; disable jshint since we prefer eslint checking
-  (setq-default flycheck-disabled-checkers
-              (append flycheck-disabled-checkers
-                      '(javascript-jshint)))
-
-;; use eslint with web-mode for jsx files
-  (flycheck-add-mode 'javascript-eslint 'web-mode)
-
-;; customize flycheck temp file prefix
-  (setq-default flycheck-temp-prefix ".flycheck")
-
-;; disable json-jsonlist checking for json files
-  (setq-default flycheck-disabled-checkers
-              (append flycheck-disabled-checkers
-                          '(json-jsonlist))))
-
-(use-package company
-  :ensure t
-  :diminish company-mode
-  :init
-  (setq company-dabbrev-ignore-case t
-        company-dabbrev-downcase nil)
-  (add-hook 'after-init-hook 'global-company-mode)
-  :config
-  (use-package company-tern
-    :ensure t
-    :init (add-to-list 'company-backends 'company-tern)))
-
-(use-package yasnippet
-  :disabled t
-  :ensure t
-  :diminish yas-minor-mode
-  :config
-  (yas-global-mode 1))
-
-(use-package ag
-  :ensure t)
-
-(use-package json-mode
-  :ensure t
-  :init (setq js-indent-level 2))
-
+;; magit
+;; git tool
 (use-package magit
-  :ensure t
+  :straight t
   :commands magit-get-top-dir
   :bind (("C-c g" . magit-status)
          ("C-c C-g l" . magit-file-log)
          ("C-c f" . magit-grep)))
 
-(use-package ghc
-  :ensure t
-  :commands ghc-init ghc-debug)
-
-(use-package flycheck-haskell
-  :ensure t
-  :commands flycheck-haskell-setup)
-
-;;(eval-after-load 'flycheck
-;;'(require 'flycheck-hdevtools))
-
-(use-package haskell-mode
-  :ensure t
-  :mode "\\.hs\\'"
-  :commands haskell-mode
-  :bind ("C-c C-s" . fix-imports)
-  :config
-  (custom-set-variables
-   '(haskell-stylish-on-save t)
-   '(haskell-ask-also-kill-buffers nil)
-   '(haskell-process-type (quote stack-ghci))
-   '(haskell-interactive-popup-errors nil)
-   ;; Customization related to indentation.
-   '(haskell-indentation-layout-offset 4)
-   '(haskell-indentation-starter-offset 4)
-   '(haskell-indentation-left-offset 4)
-   '(haskell-indentation-where-pre-offset 4)
-   '(haskell-indentation-where-post-offset 4)
-   )
-
-  (add-hook 'haskell-mode-hook 'haskell-indentation-mode)
-  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
-  (add-hook 'haskell-mode-hook 'flycheck-mode)
-  (add-hook 'before-save-hook 'haskell-mode-format-imports nil t)
-  ; (add-hook 'haskell-mode-hook 'ghc-init)
-  (define-key haskell-mode-map (kbd "M-,") (function xref-pop-marker-stack))
-)
-
-(use-package elm-mode
-  :ensure t
-  :mode "\\.elm\\'"
-  :init
-  (add-to-list 'company-backends 'company-elm)
-)
-
-
-(use-package web-mode
-  :ensure t
-  :mode (("\\.html?\\'" . web-mode)
-         ("\\.ejs\\'" . web-mode)
-         ("\\.jsx\\'" . web-mode))
-  :init
-  (setq web-mode-markup-indent-offset 2
-        web-mode-css-indent-offset 2
-        web-mode-code-indent-offset 2
-        web-mode-style-padding 2
-        web-mode-script-padding 2)
-
-  (defun my-setup-web-mode-html ()
-    (message "== setup web-mode for HTML ==")
-    (local-set-key (kbd "C-=") 'web-mode-mark-and-expand)
-    (flycheck-disable-checker 'javascript-eslint)
-    (flycheck-select-checker 'html-tidy))
-
-  (defun my-setup-web-mode-jsx ()
-    (message "== setup web-mode for JSX ==")
-    (local-set-key (kbd "C-=") 'er/expand-region)
-    ;; TODO: Somehow the html-tidy checker is still enabled when a jsx
-    ;; file is opened, but the errors disappear after the first
-    ;; change. Investigate further.
-    (flycheck-disable-checker 'html-tidy)
-    (flycheck-select-checker 'javascript-eslint)
-    (tern-mode 1)
-    (diminish 'tern-mode))
-
-  (defun my-setup-web-mode ()
-    (if (equal (file-name-extension buffer-file-name) "jsx")
-        (my-setup-web-mode-jsx)
-      (my-setup-web-mode-html)))
-
-  (defun my-web-mode-hook ()
-    (setq-local electric-pair-pairs (append electric-pair-pairs '((?' . ?'))))
-    (setq-local electric-pair-text-pairs electric-pair-pairs))
-
-  ;; (defadvice switch-to-buffer (after my-select-web-mode-config activate)
-  ;;   (when (equal major-mode 'web-mode)
-  ;;       (my-setup-web-mode)))
-
-  (flycheck-add-mode 'javascript-eslint 'web-mode)
-  (flycheck-add-mode 'html-tidy 'web-mode)
-
-  (add-hook 'web-mode-hook 'my-web-mode-hook))
-
-(use-package jsx-mode
-  :ensure t
-  :init (setq jsx-indent-level 2))
-
-(use-package tss
-  :ensure t
-  :mode ("\\.ts\\'" . typescript-mode))
-
-(use-package css-mode
-  :init (setq css-indent-offset 2)
-  :config
-  (use-package rainbow-mode
-    :ensure t
-    :diminish rainbow-mode
+;; Undo-redo tool
+(use-package undo-tree
+    :straight t
     :init
-    (add-hook 'css-mode-hook (lambda () (rainbow-mode t)))))
+    (global-undo-tree-mode 1))
 
-(use-package less-css-mode
-  :ensure t)
-
-(use-package elpy
+;; Language agnostic LSP client
+(use-package eglot
   :ensure t
-  :init (elpy-enable))
+  :functions (eglot-rename eglot-code-actions)
+  :bind (:map eglot-mode-map
+              ("C-c r" . eglot-rename)
+              ("M-'" . eglot-inlay-hints-mode)
+              ("M-." . xref-find-definitions)
+              ("C-M-." . xref-find-references)
+              ("C-c ." . eglot-code-actions))
+  :hook
+  (bash-ts-mode . eglot-ensure)
+  (js-ts-mode . eglot-ensure)
+  :custom
+  (eglot-autoshutdown t)
+  (eglot-sync-connect 3)
+  (eglot-confirm-server-initiated-edits nil)
+  (eglot-events-buffer-size '(:size 2000 :format full))
+  (eglot-send-changes-idle-time 0))
 
-(use-package scss-mode
-  :ensure t
-  :mode (("\\.scss\\'" . scss-mode)
-                  ("\\.postcss\\'" . scss-mode)))
+;; JS
+;; requires installing separately LSP server: typescript-language-server
+(use-package js
+  :straight t
+  :after eglot
+  :hook ((js-ts-mode . eglot-ensure)
+         (js-ts-mode . (lambda ()
+                         (eglot-inlay-hints-mode 1))))
+  :mode (("\\.js\\'" . js-ts-mode)
+         ("\\.jsx\\'" . js-ts-mode))
+  :interpreter (("node" . js-ts-mode))
+  :init (add-to-list 'eglot-server-programs
+                     `((js-mode js-ts-mode tsx-ts-mode typescript-ts-mode typescript-mode) .
+                       ("/home/pawel/.local/bin/typescript-language-server" "--stdio"
+                        :initializationOptions (:preferences
+                                                (:importModuleSpecifierPreference
+                                                 "non-relative"
+                                                 :includeInlayEnumMemberValueHints t
+                                                 :includeInlayFunctionLikeReturnTypeHints t
+                                                 :includeInlayFunctionParameterTypeHints t
+                                                 :includeInlayParameterNameHints "all" ; "none" | "literals" | "all"
+                                                 :includeInlayParameterNameHintsWhenArgumentMatchesName t
+                                                 :includeInlayPropertyDeclarationTypeHints t
+                                                 :includeInlayVariableTypeHints t
+                                                 :includeInlayVariableTypeHintsWhenTypeMatchesName t
+                                                 :organizeImportsCaseFirst "upper"
+                                                 :organizeImportsCollation "unicode" ; "ordinal" | "unicode"
+                                                 :organizeImportsIgnoreCase
 
-(add-to-list 'load-path "/home/pawel/.emacs.d/ess/ESS/lisp/")
-(load "ess-site")
-(setq ess-history-directory "~/R/")
-
-(use-package intero
-  :ensure t
-  :init (add-hook 'haskell-mode-hook 'intero-mode))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(haskell-ask-also-kill-buffers nil)
- '(haskell-indentation-layout-offset 4)
- '(haskell-indentation-left-offset 4)
- '(haskell-indentation-starter-offset 4)
- '(haskell-indentation-where-post-offset 4)
- '(haskell-indentation-where-pre-offset 4)
- '(haskell-interactive-popup-errors nil)
- '(haskell-process-type (quote stack-ghci))
- '(haskell-stylish-on-save t)
- '(package-selected-packages
-   (quote
-    (wordnut markdown-mode elm-mode zenburn-theme web-mode use-package tss scss-mode scala-mode2 rainbow-mode neotree magit less-css-mode julia-mode jsx-mode js2-refactor js-doc intero ghc ggtags flycheck-haskell epc ensime company-tern color-theme-wombat badger-theme ag))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
-
-(use-package markdown-mode
-  :ensure t
-  :commands (markdown-mode gfm-mode)
-  :mode (("README\\.md\\'" . gfm-mode)
-         ("\\.md\\'" . markdown-mode)
-         ("\\.markdown\\'" . markdown-mode))
-  :init (setq markdown-command "multimarkdown"))
-
-(use-package wordnut
-  :ensure t )
-
-(global-set-key [f12] 'wordnut-search)
-(global-set-key [C-f12] 'wordnut-lookup-current-word)
-
-(use-package editorconfig
-  :ensure t
-  :config
-  (editorconfig-mode 1))
+                                                 :json-false
+                                                 :quotePreference "single"))))))
