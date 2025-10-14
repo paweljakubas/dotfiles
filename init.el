@@ -1,3 +1,15 @@
+;; TO-DO - major points
+;; 1. consul integration
+;; 2. eglot things:
+;; (a) haskell eglot
+;; (b) lisp eglot
+;; (c) rust eglot
+;; (d) j eglot
+;; (e) zig eglot
+;; (f) julia eglot
+;; 3. shell integration
+;; 4. pdf/ebook reader
+
 ;;Abbrieviate y or n instead of yes or no
 (fset 'yes-or-no-p 'y-or-n-p)
 
@@ -38,6 +50,7 @@
       (list (format "%s %%S: %%j " (system-name))
             '(buffer-file-name "%f" (dired-directory dired-directory "%b"))))
 
+;; my first useful elisp function defined so needs to stay for historical reasons ;-)
 (defun show-file-name ()
   "Show the full path file name in the minibuffer."
   (interactive)
@@ -50,6 +63,7 @@
 
 ;; straight
 ;; Used for package downloading and compilation
+;; every package store in .emacs.d/straight directory rather than .emacs.d/elpa directory
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name
@@ -115,8 +129,8 @@
   :straight t
   :ensure t)
 
-;; magit
 ;; git tool
+;; TO-DO add bindings C-c m X
 (use-package magit
   :straight t
   :commands magit-get-top-dir
@@ -125,25 +139,26 @@
          ("C-c f" . magit-grep)))
 
 ;; Undo-redo tool
+;; TO-DO add bindings C-c u X
 (use-package undo-tree
     :straight t
     :init
     (global-undo-tree-mode 1))
 
 ;; Language agnostic LSP client
-;; Invoke M-x eglot in program-mode to use
+;; Invoke M-x eglot in program-mode to use every time we start working in a project.
 (use-package eglot
   :ensure t
   :bind (:map eglot-mode-map
-	      ("C-c l a" . eglot-code-actions)
-	      ("C-c l R" . eglot-rename)
-	      ("C-c l h" . eldoc)
-	      ("C-c l f" . eglot-format)
-	      ("C-c l F" . eglot-format-buffer)
-	      ("C-c l d" . xref-find-definitions)
-              ("C-c l i" . eglot-inlay-hints-mode)
-              ("C-c l r" . xref-find-references)
-	      ("C-c l c" . eglot-reconnect))
+	      ("C-c e a" . eglot-code-actions)
+	      ("C-c e R" . eglot-rename)
+	      ("C-c e h" . eldoc)
+	      ("C-c e f" . eglot-format) ;; format the region, if no region selected then it defaults to eglot-format-buffer
+	      ("C-c e F" . eglot-format-buffer)
+	      ("C-c e d" . xref-find-definitions)
+              ("C-c e i" . eglot-inlay-hints-mode) ;; switch on/off hint mode, by default it is switched on
+              ("C-c e r" . xref-find-references)
+	      ("C-c e c" . eglot-reconnect))
   :hook
   (bash-ts-mode . eglot-ensure)
   (js-ts-mode . eglot-ensure)
@@ -154,8 +169,9 @@
   (eglot-events-buffer-size '(:size 2000 :format full))
   (eglot-send-changes-idle-time 0))
 
-;; JS
+;; JS/TS
 ;; requires installing separately LSP server: typescript-language-server
+;; https://github.com/typescript-language-server/typescript-language-server
 (use-package js
   :straight t
   :after eglot
