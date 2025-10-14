@@ -131,15 +131,19 @@
     (global-undo-tree-mode 1))
 
 ;; Language agnostic LSP client
+;; Invoke M-x eglot in program-mode to use
 (use-package eglot
   :ensure t
-  :functions (eglot-rename eglot-code-actions)
   :bind (:map eglot-mode-map
-              ("C-c r" . eglot-rename)
-              ("M-'" . eglot-inlay-hints-mode)
-              ("M-." . xref-find-definitions)
-              ("C-M-." . xref-find-references)
-              ("C-c ." . eglot-code-actions))
+	      ("C-c l a" . eglot-code-actions)
+	      ("C-c l R" . eglot-rename)
+	      ("C-c l h" . eldoc)
+	      ("C-c l f" . eglot-format)
+	      ("C-c l F" . eglot-format-buffer)
+	      ("C-c l d" . xref-find-definitions)
+              ("C-c l i" . eglot-inlay-hints-mode)
+              ("C-c l r" . xref-find-references)
+	      ("C-c l c" . eglot-reconnect))
   :hook
   (bash-ts-mode . eglot-ensure)
   (js-ts-mode . eglot-ensure)
