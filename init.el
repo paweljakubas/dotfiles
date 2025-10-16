@@ -94,6 +94,8 @@
 (setq package-enable-at-startup nil)
 
 ;; treesitter
+;; install language grammer via
+;;   M-x treesit-install-language-grammar LANG
 (setq treesit-language-source-alist
     '((bash "https://github.com/tree-sitter/tree-sitter-bash")
      (c "https://github.com/tree-sitter/tree-sitter-c")
@@ -101,7 +103,6 @@
      (elisp "https://github.com/Wilfred/tree-sitter-elisp")
      (html "https://github.com/tree-sitter/tree-sitter-html")
      (json "https://github.com/tree-sitter/tree-sitter-json")
-     (haskell "https://github.com/tree-sitter/tree-sitter-haskell")
      (make "https://github.com/alemuller/tree-sitter-make")
      (markdown "https://github.com/ikatyang/tree-sitter-markdown")
      (python "https://github.com/tree-sitter/tree-sitter-python")
@@ -119,7 +120,6 @@
      (cmake-mode . cmake-ts-mode)
      (conf-toml-mode . toml-ts-mode)
      (css-mode . css-ts-mode)
-     (haskell-mode . haskell-ts-mode)
      (js-mode . js-ts-mode)
      (js-json-mode . json-ts-mode)
      (json-mode . json-ts-mode)
@@ -140,18 +140,6 @@
 (use-package tree-sitter-indent
   :straight t
   :ensure t)
-
-;;(use-package flymake
-;;  :straight t
-;;  :ensure t
-;;  :custom
-;;  (flymake-no-changes-timeout 0.01)
-;;  :hook (emacs-lisp-mode . flymake-mode)
-;;  :bind (:map flymake-mode-map
-;;              ("M-]" . flymake-goto-next-error)
-;;              ("M-[" . flymake-goto-prev-error)
-;;              ("M-\\" . flymake-show-buffer-diagnostics)))
-;;
 
 ;; In order to enble this one needs to have https://github.com/ryanoasis/nerd-fonts fonts installed in the system.
 ;; M-x nerd-icons-install-fonts
@@ -207,6 +195,7 @@
   :hook
   (bash-ts-mode . eglot-ensure)
   (js-ts-mode . eglot-ensure)
+  (haskell-ts-mode . eglot-ensure)
   :custom
   (eglot-autoshutdown t)
   (eglot-sync-connect 3)
@@ -248,53 +237,22 @@
                                                  :quotePreference "single"))))))
 
 ;; Haskell
-(defun haskell-eglot-setup ()
-            "Setting up lsp server."
-            (let* ((wrapper (executable-find "haskell-language-server-wrapper"))
-                   (hls (or wrapper (executable-find "haskell-language-server")))
-                   (modes '(haskell-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode)))
-              (cond
-               (hls
-                (let ((cmd (if wrapper
-                             '("haskell-language-server-wrapper" "--lsp")
-                             '("haskell-language-server" "--lsp"))))
-                  (dolist (mm modes)
-                    (setq-local eglot-server-programs
-                                (cons (cons mm cmd)
-                                      (assq-delete-all mm eglot-server-programs))))))
-               (t))))
-
-(defun haskell-eglot-ensure ()
-            "Eglot in Haskell buffer, only when server is available and set-up."
-            (let* ((hls (or (executable-find "haskell-language-server-wrapper")
-                            (executable-find "haskell-language-server"))))
-              (if (or hls)
-                  (eglot-ensure)
-                      (message "HLS not in PATH"))))
-
 (use-package haskell-mode
   :straight t
   :after eglot
   :defer t
-  :init
-  (add-to-list 'eglot-server-programs
-               '(haskell-mode . ("haskell-language-server-wrapper" "--lsp")))
-  (add-to-list 'eglot-server-programs
-               '(haskell-literate-mode . ("haskell-language-server-wrapper" "--lsp")))
-  (add-to-list 'eglot-server-programs
-               '(literate-haskell-mode . ("haskell-language-server-wrapper" "--lsp")))
-  (add-to-list 'eglot-server-programs
-               '(haskell-debug-mode . ("haskell-language-server-wrapper" "--lsp")))
-  :hook ((haskell-mode . haskell-eglot-setup)
-         (haskell-mode . haskell-eglot-ensure)
-         (haskell-mode . haskell-decl-scan-mode)
+  :init (add-to-list 'eglot-server-programs
+                     `((haskell-mode haskell-ts-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode) .
+                       ("/home/pawel/.ghcup/bin/haskell-language-server-9.10.1~2.10.0.0" "--lsp")))
+  :hook ((haskell-mode . haskell-decl-scan-mode)
          (haskell-mode . haskell-doc-mode)
          (haskell-mode . interactive-haskell-mode)
          (haskell-mode . yas-minor-mode))
+  :mode (("\\.hs\\'" . haskell-mode)
+         ("\\.lhs\\'" . haskell-mode))
   :custom
   (haskell-indentation-layout-offset 4)
   (haskell-indentation-left-offset 4)
-  ;; ormolu
   (haskell-stylish-on-save nil)
   :bind
   (:map haskell-mode-map
