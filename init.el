@@ -141,17 +141,17 @@
   :straight t
   :ensure t)
 
-(use-package flymake
-  :straight t
-  :ensure t
-  :custom
-  (flymake-no-changes-timeout 0.01)
-  (elisp-flymake-byte-compile-load-path load-path)
-  :hook (emacs-lisp-mode . flymake-mode)
-  :bind (:map flymake-mode-map
-              ("M-]" . flymake-goto-next-error)
-              ("M-[" . flymake-goto-prev-error)
-              ("M-\\" . flymake-show-buffer-diagnostics)))
+;;(use-package flymake
+;;  :straight t
+;;  :ensure t
+;;  :custom
+;;  (flymake-no-changes-timeout 0.01)
+;;  :hook (emacs-lisp-mode . flymake-mode)
+;;  :bind (:map flymake-mode-map
+;;              ("M-]" . flymake-goto-next-error)
+;;              ("M-[" . flymake-goto-prev-error)
+;;              ("M-\\" . flymake-show-buffer-diagnostics)))
+;;
 
 ;; In order to enble this one needs to have https://github.com/ryanoasis/nerd-fonts fonts installed in the system.
 ;; M-x nerd-icons-install-fonts
@@ -170,7 +170,7 @@
 (use-package doom-modeline
   :straight t
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 10)))
+  :custom ((doom-modeline-height 15)))
 
 ;; git tool
 ;; TO-DO add bindings C-c m X
@@ -246,3 +246,58 @@
 
                                                  :json-false
                                                  :quotePreference "single"))))))
+
+;; Haskell
+(defun haskell-eglot-setup ()
+            "Setting up lsp server."
+            (let* ((wrapper (executable-find "haskell-language-server-wrapper"))
+                   (hls (or wrapper (executable-find "haskell-language-server")))
+                   (modes '(haskell-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode)))
+              (cond
+               (hls
+                (let ((cmd (if wrapper
+                             '("haskell-language-server-wrapper" "--lsp")
+                             '("haskell-language-server" "--lsp"))))
+                  (dolist (mm modes)
+                    (setq-local eglot-server-programs
+                                (cons (cons mm cmd)
+                                      (assq-delete-all mm eglot-server-programs))))))
+               (t))))
+
+(defun haskell-eglot-ensure ()
+            "Eglot in Haskell buffer, only when server is available and set-up."
+            (let* ((hls (or (executable-find "haskell-language-server-wrapper")
+                            (executable-find "haskell-language-server"))))
+              (if (or hls)
+                  (eglot-ensure)
+                      (message "HLS not in PATH"))))
+
+(use-package haskell-mode
+  :straight t
+  :after eglot
+  :defer t
+  :init
+  (add-to-list 'eglot-server-programs
+               '(haskell-mode . ("haskell-language-server-wrapper" "--lsp")))
+  (add-to-list 'eglot-server-programs
+               '(haskell-literate-mode . ("haskell-language-server-wrapper" "--lsp")))
+  (add-to-list 'eglot-server-programs
+               '(literate-haskell-mode . ("haskell-language-server-wrapper" "--lsp")))
+  (add-to-list 'eglot-server-programs
+               '(haskell-debug-mode . ("haskell-language-server-wrapper" "--lsp")))
+  :hook ((haskell-mode . haskell-eglot-setup)
+         (haskell-mode . haskell-eglot-ensure)
+         (haskell-mode . haskell-decl-scan-mode)
+         (haskell-mode . haskell-doc-mode)
+         (haskell-mode . interactive-haskell-mode)
+         (haskell-mode . yas-minor-mode))
+  :custom
+  (haskell-indentation-layout-offset 4)
+  (haskell-indentation-left-offset 4)
+  ;; ormolu
+  (haskell-stylish-on-save nil)
+  :bind
+  (:map haskell-mode-map
+        ("C-c C-l" . haskell-process-load-file)
+        ("C-c C-t" . haskell-mode-show-type-at)
+        ("C-c C-i" . haskell-process-do-info)))
