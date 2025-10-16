@@ -1,4 +1,5 @@
 ;; TO-DO - major points
+;; 0. Fill in TO-DOs below
 ;; 1. consul integration
 ;; 2. eglot things:
 ;; (a) haskell eglot
@@ -17,7 +18,17 @@
 (show-paren-mode t)
 
 ;;Separate line number and the beginning of the line
-(add-hook 'prog-mode-hook #'display-line-numbers-mode)
+(column-number-mode)
+(global-display-line-numbers-mode t)
+
+;; Disable line numbers for some modes
+(dolist (mode '(org-mode-hook
+                term-mode-hook
+                shell-mode-hook
+                treemacs-mode-hook
+                eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
 (global-set-key [f5] 'goto-line)
 
 ;;Highligth trailing white spaces
@@ -144,6 +155,8 @@
     :straight t
     :init
     (global-undo-tree-mode 1))
+
+(setq undo-tree-auto-save-history nil)
 
 ;; Language agnostic LSP client
 ;; Invoke M-x eglot in program-mode to use every time we start working in a project.
