@@ -119,6 +119,7 @@
      (cmake-mode . cmake-ts-mode)
      (conf-toml-mode . toml-ts-mode)
      (css-mode . css-ts-mode)
+     (haskell-mode . haskell-ts-mode)
      (js-mode . js-ts-mode)
      (js-json-mode . json-ts-mode)
      (json-mode . json-ts-mode)
@@ -139,6 +140,25 @@
 (use-package tree-sitter-indent
   :straight t
   :ensure t)
+
+;; In order to enble this one needs to have https://github.com/ryanoasis/nerd-fonts fonts installed in the system.
+;; M-x nerd-icons-install-fonts
+(use-package nerd-icons
+  :straight (nerd-icons
+             :type git
+             :host github
+             :repo "rainstormstudio/nerd-icons.el"
+             :files (:defaults "data"))
+  :custom
+  ;; The Nerd Font you want to use in GUI
+  ;; "Symbols Nerd Font Mono" is the default and is recommended
+  ;; but you can use any other Nerd Font if you want
+  (nerd-icons-font-family "Symbols Nerd Font Mono"))
+
+(use-package doom-modeline
+  :straight t
+  :init (doom-modeline-mode 1)
+  :custom ((doom-modeline-height 10)))
 
 ;; git tool
 ;; TO-DO add bindings C-c m X
