@@ -141,6 +141,18 @@
   :straight t
   :ensure t)
 
+(use-package flymake
+  :straight t
+  :ensure t
+  :custom
+  (flymake-no-changes-timeout 0.01)
+  (elisp-flymake-byte-compile-load-path load-path)
+  :hook (emacs-lisp-mode . flymake-mode)
+  :bind (:map flymake-mode-map
+              ("M-]" . flymake-goto-next-error)
+              ("M-[" . flymake-goto-prev-error)
+              ("M-\\" . flymake-show-buffer-diagnostics)))
+
 ;; In order to enble this one needs to have https://github.com/ryanoasis/nerd-fonts fonts installed in the system.
 ;; M-x nerd-icons-install-fonts
 (use-package nerd-icons
