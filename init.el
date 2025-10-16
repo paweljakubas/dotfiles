@@ -1,3 +1,5 @@
+;;; init.el --- The initial emacs configuration -*- lexical-binding: t -*-
+
 ;; TO-DO - major points
 ;; 0. Fill in TO-DOs below
 ;; 1. consul integration
@@ -259,3 +261,31 @@
         ("C-c C-l" . haskell-process-load-file)
         ("C-c C-t" . haskell-mode-show-type-at)
         ("C-c C-i" . haskell-process-do-info)))
+
+;; part of haskell-mode package
+(use-package haskell-interactive-mode
+  :defer t
+  :requires haskell-mode
+  :custom
+  (haskell-process-type 'cabal-repl)
+  (haskell-process-auto-import-loaded-modules t)
+  (haskell-process-log t)
+  :bind
+  (:map haskell-mode-map
+        ("C-c C-z" . haskell-interactive-switch)
+        ("C-c C-k" . haskell-interactive-mode-clear)))
+
+;; part of haskell-mode package
+(use-package haskell-doc
+  :defer t
+  :requires haskell-mode
+  :config (haskell-doc-mode t))
+
+;;(defun haskell-eval-region ()
+;;  "Evaluate region in an interactive Haskell and return the result."
+;;  (interactive)
+;;  (if (use-region-p)
+;;      (haskell-process-do-try (buffer-substring (region-beginning) (region-end)))
+;;    (message "No active region specified.")))
+;;
+;;(bind-key "C-c C-e" 'haskell-eval-region haskell-mode-map)
