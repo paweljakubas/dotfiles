@@ -233,15 +233,16 @@
 
 (setq undo-tree-auto-save-history nil)
 
-;; Add ghcup to PATH (auto-detect GHC and HLS versions)
-(let* ((ghc-dir (car (directory-files "~/.ghcup/ghc" t "^9\\.")))
+;; Add ghcup to PATH (auto-detect GHC and HLS versions) plus define home dir
+(let* ((home-dir (or (getenv "HOME") (expand-file-name "~")))
+       (ghc-dir (car (directory-files (concat home-dir "/.ghcup/ghc") t "^9\\.")))
        (ghc-ver (and ghc-dir (file-name-nondirectory ghc-dir)))
-       (hls-dir (car (sort (directory-files "~/.ghcup/hls" t) (lambda (a b) (string< b a)))))
+       (hls-dir (car (sort (directory-files (concat home-dir "/.ghcup/hls") t) (lambda (a b) (string< b a)))))
        (hls-ver (and (not (string-match "^\\." hls-dir)) (file-name-nondirectory hls-dir))))
   (when ghc-ver
-    (setenv "PATH" (concat "/home/pawel/.ghcup/bin:/home/pawel/.ghcup/ghc/" ghc-ver "/bin:" (getenv "PATH")))
-    (push "/home/pawel/.ghcup/bin" exec-path)
-    (push (concat "/home/pawel/.ghcup/ghc/" ghc-ver "/bin") exec-path))
+    (setenv "PATH" (concat home-dir "/.ghcup/bin:" home-dir "/.ghcup/ghc/" ghc-ver "/bin:" (getenv "PATH")))
+    (push (concat home-dir "/.ghcup/bin") exec-path)
+    (push (concat home-dir "/.ghcup/ghc/" ghc-ver "/bin") exec-path))
   (setq haskell-language-server-wrapper (if hls-ver
     (concat "haskell-language-server-wrapper-" hls-ver)
     "haskell-language-server-wrapper"))
@@ -299,7 +300,7 @@
   :interpreter (("node" . js-ts-mode))
   :init (add-to-list 'eglot-server-programs
                      `((js-mode js-ts-mode tsx-ts-mode typescript-ts-mode typescript-mode) .
-                       ("/home/pawel/.local/bin/typescript-language-server" "--stdio"
+                        ((concat (or (getenv "HOME") (expand-file-name "~")) "/.local/bin/typescript-language-server") "--stdio"
                         :initializationOptions (:preferences
                                                 (:importModuleSpecifierPreference
                                                  "non-relative"
