@@ -1,14 +1,11 @@
-;;; init.el --- The initial emacs configuration -*- lexical-binding: t -*-
+;; init.el --- The initial emacs configuration -*- lexical-binding: t -*-
 
 ;; TO-DO - major points
 ;; 0. Fill in TO-DOs below
-;; 1. consul integration
 ;; 2. eglot things:
-;; (a) haskell eglot
 ;; (b) lisp eglot
 ;; (c) rust eglot
 ;; (d) j eglot
-;; (e) zig eglot
 ;; (f) julia eglot
 ;; 3. shell integration
 ;; 4. pdf/ebook reader
@@ -33,6 +30,7 @@
 
 (global-set-key [f5] 'goto-line)
 
+
 ;;Highligth trailing white spaces
 (setq-default show-trailing-whitespace t)
 
@@ -40,8 +38,8 @@
 (setq-default indent-tabs-mode nil)
 
 ;;If there are trailing spaces remove them before saving the file
-(add-hook 'before-save-hook 'whitespace-cleanup)
-(add-hook 'before-save-hook (lambda()  (delete-trailing-whitespace)))
+;;(add-hook 'before-save-hook 'whitespace-cleanup)
+;;(add-hook 'before-save-hook (lambda()  (delete-trailing-whitespace)))
 
 ;;Removing backup files
 (setq make-backup-files nil)
@@ -72,6 +70,9 @@
 (global-set-key [C-f1] 'show-file-name)
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 
+(setq-default ispell-program-name "aspell")
+(add-hook 'text-mode-hook 'flyspell-mode)
+
 (load-theme 'wombat t)
 
 ;; straight
@@ -100,16 +101,10 @@
 ;;   M-x treesit-install-language-grammar LANG
 (setq treesit-language-source-alist
     '((bash "https://github.com/tree-sitter/tree-sitter-bash")
-     (c "https://github.com/tree-sitter/tree-sitter-c")
-     (css "https://github.com/tree-sitter/tree-sitter-css")
      (elisp "https://github.com/Wilfred/tree-sitter-elisp")
      (html "https://github.com/tree-sitter/tree-sitter-html")
      (json "https://github.com/tree-sitter/tree-sitter-json")
-     (make "https://github.com/alemuller/tree-sitter-make")
      (markdown "https://github.com/ikatyang/tree-sitter-markdown")
-     (python "https://github.com/tree-sitter/tree-sitter-python")
-     (rust "https://github.com/tree-sitter/tree-sitter-rust")
-     (toml "https://github.com/tree-sitter/tree-sitter-toml")
      (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
      (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
 
@@ -117,15 +112,10 @@
   :when (and (fboundp 'treesit-available-p) (treesit-available-p))
   :custom
   (major-mode-remap-alist
-   '((c-mode . c-ts-mode)
-     (c++-mode . c++-ts-mode)
-     (cmake-mode . cmake-ts-mode)
-     (conf-toml-mode . toml-ts-mode)
-     (css-mode . css-ts-mode)
+   '((css-mode . css-ts-mode)
      (js-mode . js-ts-mode)
      (js-json-mode . json-ts-mode)
      (json-mode . json-ts-mode)
-     (python-mode . python-ts-mode)
      (sh-mode . bash-ts-mode)
      (typescript-mode . typescript-ts-mode))))
 
@@ -160,16 +150,79 @@
 (use-package doom-modeline
   :straight t
   :init (doom-modeline-mode 1)
-  :custom ((doom-modeline-height 15)))
+  :custom ((doom-modeline-height 25)
+           (doom-modeline-max-length 35)))
+
+(use-package rainbow-delimiters
+  :straight t  
+  :hook (prog-mode . rainbow-delimiters-mode))
+
+(use-package multiple-cursors
+  :straight t
+  :bind (("C-c c r" . mc/edit-lines)
+         ("C-c c n" . mc/mark-next-like-this)
+         ("C-c c p" . mc/mark-previous-like-this)
+         ("C-c c a" . mc/mark-all-like-this)))
+
+(use-package ivy
+  :straight t
+  :ensure t  
+  :diminish
+  :bind (("C-s" . swiper)
+         :map ivy-minibuffer-map
+         ("TAB" . ivy-alt-done)
+         ("C-l" . ivy-alt-done)
+         ("C-j" . ivy-next-line)
+         ("C-k" . ivy-previous-line)
+         :map ivy-switch-buffer-map
+         ("C-k" . ivy-previous-line)
+         ("C-l" . ivy-done)
+         ("C-d" . ivy-switch-buffer-kill)
+         :map ivy-reverse-i-search-map
+         ("C-k" . ivy-previous-line)
+         ("C-d" . ivy-reverse-i-search-kill))
+  :config
+  (ivy-mode 1))
+
+(use-package which-key
+  :straight t
+  :ensure t  
+  :init (which-key-mode)
+  :diminish which-key-mode
+  :config
+  (setq which-key-idle-delay 1))
+
+(use-package ivy-rich
+  :straight t
+  :ensure t
+  :after ivy
+  :init
+  (ivy-rich-mode 1))
+
+(use-package counsel
+  :straight t
+  :ensure t  
+  :bind (("M-x" . counsel-M-x)
+         ("C-x b" . counsel-ibuffer)
+         ("C-x C-f" . counsel-find-file)
+         :map minibuffer-local-map
+         ("C-r" . 'counsel-minibuffer-history))
+  :custom
+  (counsel-describe-function-function #'helpful-callable)
+  (counsel-describe-variable-function #'helpful-variable)
+  :bind
+  ([remap describe-function] . counsel-describe-function)
+  ([remap describe-command] . helpful-command)
+  ([remap describe-variable] . counsel-describe-variable)
+  ([remap describe-key] . helpful-key))
 
 ;; git tool
-;; TO-DO add bindings C-c m X
 (use-package magit
   :straight t
   :commands magit-get-top-dir
-  :bind (("C-c g" . magit-status)
-         ("C-c C-g l" . magit-file-log)
-         ("C-c f" . magit-grep)))
+  :bind (("C-c m g" . magit-status)
+         ("C-c m l" . magit-file-log)
+         ("C-c m f" . magit-grep)))
 
 ;; Undo-redo tool
 ;; TO-DO add bindings C-c u X
@@ -180,9 +233,24 @@
 
 (setq undo-tree-auto-save-history nil)
 
+;; Add ghcup to PATH (auto-detect GHC and HLS versions)
+(let* ((ghc-dir (car (directory-files "~/.ghcup/ghc" t "^9\\.")))
+       (ghc-ver (and ghc-dir (file-name-nondirectory ghc-dir)))
+       (hls-dir (car (sort (directory-files "~/.ghcup/hls" t) (lambda (a b) (string< b a)))))
+       (hls-ver (and (not (string-match "^\\." hls-dir)) (file-name-nondirectory hls-dir))))
+  (when ghc-ver
+    (setenv "PATH" (concat "/home/pawel/.ghcup/bin:/home/pawel/.ghcup/ghc/" ghc-ver "/bin:" (getenv "PATH")))
+    (push "/home/pawel/.ghcup/bin" exec-path)
+    (push (concat "/home/pawel/.ghcup/ghc/" ghc-ver "/bin") exec-path))
+  (setq haskell-language-server-wrapper (if hls-ver
+    (concat "haskell-language-server-wrapper-" hls-ver)
+    "haskell-language-server-wrapper"))
+)
+
 ;; Language agnostic LSP client
-;; Invoke M-x eglot in program-mode to use every time we start working in a project.
+;; Invoking M-x eglot in program-mode to use every time we start working in a project.
 (use-package eglot
+  :straight t  
   :ensure t
   :bind (:map eglot-mode-map
 	      ("C-c e a" . eglot-code-actions)
@@ -197,7 +265,10 @@
   :hook
   (bash-ts-mode . eglot-ensure)
   (js-ts-mode . eglot-ensure)
-  (haskell-ts-mode . eglot-ensure)
+  (haskell-mode . eglot-ensure)
+  (zig-mode-hook . eglot-ensure)
+  :config
+  (add-to-list 'eglot-server-programs `(haskell-mode . (,haskell-language-server-wrapper "--lsp")))
   :custom
   (eglot-autoshutdown t)
   (eglot-sync-connect 3)
@@ -205,12 +276,21 @@
   (eglot-events-buffer-size '(:size 2000 :format full))
   (eglot-send-changes-idle-time 0))
 
+(use-package company
+  :straight t
+  :after eglot
+  :hook (after-init . global-company-mode)
+  :config
+  (setq company-idle-delay 0)
+  (add-to-list 'company-backends 'company-capf))
+
 ;; JS/TS
 ;; requires installing separately LSP server: typescript-language-server
 ;; https://github.com/typescript-language-server/typescript-language-server
 (use-package js
   :straight t
   :after eglot
+  :defer t
   :hook ((js-ts-mode . eglot-ensure)
          (js-ts-mode . (lambda ()
                          (eglot-inlay-hints-mode 1))))
@@ -238,18 +318,53 @@
                                                  :json-false
                                                  :quotePreference "single"))))))
 
+
+;; Zig
+;; requires installing separately ZLS: zig-language-server
+;; via debian apt
+(use-package zig-mode
+  :straight t
+  :after eglot
+  :defer t
+  :init (add-to-list 'eglot-server-programs
+    '(zig-mode . (
+      ;; Use `zls` if it is in your PATH
+      "/usr/bin/zls"
+      ;; There are two ways to set config options:
+      ;;   - edit your `zls.json` that applies to any editor that uses ZLS
+      ;;   - set in-editor config options with the `initializationOptions` field below.
+      ;;
+      ;; Further information on how to configure ZLS:
+      ;; https://zigtools.org/zls/configure/
+      :initializationOptions
+        (;; Whether to enable build-on-save diagnostics
+         ;;
+         ;; Further information about build-on save:
+         ;; https://zigtools.org/zls/guides/build-on-save/
+         ;;enable_build_on_save t
+         )))))
+
 ;; Haskell
+
+;;Create symlinks in ~/.ghcup/bin if missing:
+;;```bash
+;;ln -s ../ghc/9.10.3/bin/ghc ~/.ghcup/bin/ghc
+;;ln -s ../ghc/9.10.3/bin/ghc-pkg ~/.ghcup/bin/ghc-pkg
+;;```
+
+;; requires installing separately LSP server: haskell-language-server
+;; setup via ghcup tool
 (use-package haskell-mode
   :straight t
   :after eglot
   :defer t
   :init (add-to-list 'eglot-server-programs
                      `((haskell-mode haskell-ts-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode) .
-                       ("/home/pawel/.ghcup/bin/haskell-language-server-9.10.1~2.10.0.0" "--lsp")))
+                         (,haskell-language-server-wrapper "--lsp")))
   :hook ((haskell-mode . haskell-decl-scan-mode)
          (haskell-mode . haskell-doc-mode)
-         (haskell-mode . interactive-haskell-mode)
-         (haskell-mode . yas-minor-mode))
+         (haskell-mode . eldoc-mode)
+         (haskell-mode . interactive-haskell-mode))
   :mode (("\\.hs\\'" . haskell-mode)
          ("\\.lhs\\'" . haskell-mode))
   :custom
@@ -281,11 +396,3 @@
   :requires haskell-mode
   :config (haskell-doc-mode t))
 
-;;(defun haskell-eval-region ()
-;;  "Evaluate region in an interactive Haskell and return the result."
-;;  (interactive)
-;;  (if (use-region-p)
-;;      (haskell-process-do-try (buffer-substring (region-beginning) (region-end)))
-;;    (message "No active region specified.")))
-;;
-;;(bind-key "C-c C-e" 'haskell-eval-region haskell-mode-map)
