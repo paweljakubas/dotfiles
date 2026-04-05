@@ -1,12 +1,7 @@
-;; init.el --- The initial emacs configuration -*- lexical-binding: t -*-
-
-;; TO-DO - major points
 ;; 0. Fill in TO-DOs below
 ;; 2. eglot things:
 ;; (b) lisp eglot
 ;; (c) rust eglot
-;; (d) j eglot
-;; (f) julia eglot
 ;; 3. shell integration
 ;; 4. pdf/ebook reader
 
@@ -40,6 +35,21 @@
 ;;If there are trailing spaces remove them before saving the file
 ;;(add-hook 'before-save-hook 'whitespace-cleanup)
 ;;(add-hook 'before-save-hook (lambda()  (delete-trailing-whitespace)))
+
+;;clipboard interoperability when region selected
+;; - copy to system clipboard: M-w (Alt+w) - this works if select-active-regions is set to all
+;; - paste from system clipboard: C-y (Ctrl+y) or M-x clipboard-yank
+(setq select-active-regions 'all)
+(setq x-select-enable-clipboard-manager t)
+
+(defvar my-xclip-proc nil)
+
+(defun my-sync-to-clipboard (&rest args)
+  (message "Syncing to clipboard: %s" (car kill-ring))
+  (when (car kill-ring)
+    (call-process-region (car kill-ring) nil "xclip" nil nil nil "-selection" "clipboard")))
+
+(advice-add 'kill-ring-save :after #'my-sync-to-clipboard)
 
 ;;Removing backup files
 (setq make-backup-files nil)
@@ -285,6 +295,61 @@
   (setq company-idle-delay 0)
   (add-to-list 'company-backends 'company-capf))
 
+;; Haskell
+
+;;Create symlinks in ~/.ghcup/bin if missing:
+;; For example
+;;```bash
+;;ln -s ../ghc/9.10.3/bin/ghc ~/.ghcup/bin/ghc
+;;ln -s ../ghc/9.10.3/bin/ghc-pkg ~/.ghcup/bin/ghc-pkg
+;;```
+;; requires installing separately LSP server: haskell-language-server
+;; setup via ghcup tool
+(use-package haskell-mode
+  :straight t
+  :after eglot
+  :defer t
+  :init (add-to-list 'eglot-server-programs
+                     `((haskell-mode haskell-ts-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode) .
+                         (,haskell-language-server-wrapper "--lsp")))
+  :hook ((haskell-mode . haskell-decl-scan-mode)
+         (haskell-mode . haskell-doc-mode)
+         (haskell-mode . eldoc-mode)
+         (haskell-mode . interactive-haskell-mode))
+  :mode (("\\.hs\\'" . haskell-mode)
+         ("\\.lhs\\'" . haskell-mode))
+  :custom
+  (haskell-indentation-layout-offset 4)
+  (haskell-indentation-left-offset 4)
+  (haskell-stylish-on-save nil)
+  :bind
+  (:map haskell-mode-map
+        ("C-c h C-l" . haskell-process-load-file)
+        ("C-c h C-t" . haskell-mode-show-type-at)
+        ("C-c h C-i" . haskell-process-do-info)))
+
+;; part of haskell-mode package
+;; When haskell file in buffer active call : C-c C-l (haskell-process-load-file)
+(use-package haskell-interactive-mode
+  :defer t
+  :requires haskell-mode
+  :custom
+  (haskell-process-type 'cabal-repl)
+  (haskell-process-auto-import-loaded-modules t)
+  (haskell-process-log t)
+  :bind
+  (:map haskell-mode-map
+        ("C-c h C-z" . haskell-interactive-switch)
+        ("C-c h C-k" . haskell-interactive-mode-clear)))
+
+;; part of haskell-mode package
+;; needed for C-c h C-t
+;; needed for C-c h C-i
+(use-package haskell-doc
+  :defer t
+  :requires haskell-mode
+  :config (haskell-doc-mode t))
+
 ;; JS/TS
 ;; requires installing separately LSP server: typescript-language-server
 ;; https://github.com/typescript-language-server/typescript-language-server
@@ -345,55 +410,4 @@
          ;;enable_build_on_save t
          )))))
 
-;; Haskell
-
-;;Create symlinks in ~/.ghcup/bin if missing:
-;;```bash
-;;ln -s ../ghc/9.10.3/bin/ghc ~/.ghcup/bin/ghc
-;;ln -s ../ghc/9.10.3/bin/ghc-pkg ~/.ghcup/bin/ghc-pkg
-;;```
-
-;; requires installing separately LSP server: haskell-language-server
-;; setup via ghcup tool
-(use-package haskell-mode
-  :straight t
-  :after eglot
-  :defer t
-  :init (add-to-list 'eglot-server-programs
-                     `((haskell-mode haskell-ts-mode haskell-literate-mode literate-haskell-mode haskell-debug-mode) .
-                         (,haskell-language-server-wrapper "--lsp")))
-  :hook ((haskell-mode . haskell-decl-scan-mode)
-         (haskell-mode . haskell-doc-mode)
-         (haskell-mode . eldoc-mode)
-         (haskell-mode . interactive-haskell-mode))
-  :mode (("\\.hs\\'" . haskell-mode)
-         ("\\.lhs\\'" . haskell-mode))
-  :custom
-  (haskell-indentation-layout-offset 4)
-  (haskell-indentation-left-offset 4)
-  (haskell-stylish-on-save nil)
-  :bind
-  (:map haskell-mode-map
-        ("C-c C-l" . haskell-process-load-file)
-        ("C-c C-t" . haskell-mode-show-type-at)
-        ("C-c C-i" . haskell-process-do-info)))
-
-;; part of haskell-mode package
-(use-package haskell-interactive-mode
-  :defer t
-  :requires haskell-mode
-  :custom
-  (haskell-process-type 'cabal-repl)
-  (haskell-process-auto-import-loaded-modules t)
-  (haskell-process-log t)
-  :bind
-  (:map haskell-mode-map
-        ("C-c C-z" . haskell-interactive-switch)
-        ("C-c C-k" . haskell-interactive-mode-clear)))
-
-;; part of haskell-mode package
-(use-package haskell-doc
-  :defer t
-  :requires haskell-mode
-  :config (haskell-doc-mode t))
 
